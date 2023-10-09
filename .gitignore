@@ -1,0 +1,10 @@
+*ncu
+*.so
+*.o
+*.ncu-rep
+*.nsys-rep
+*.sqlite
+build
+kernel_test
+*.egg-info
+.vscode
