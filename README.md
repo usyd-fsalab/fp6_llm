@@ -9,28 +9,27 @@ Our long-term goal is to support **various quantization methods** by providing *
 ## Roadmap
 
 The current release contains:
-- Efficient CUDA implementation for [*Mixed-input Matrix Multiplication*](https://blog.research.google/2024/01/mixed-input-matrix-multiplication.html) with Tensor Core enabled. Currently, we support model weights in FP6 (6-bit float-point) and the activations in FP16 format.
-- C++ APIs and Pytorch APIs to use the CUDA kernels.
+- Efficient CUDA implementation for mixed-input matrix multiplication of linear layers (weights in FP6 and activations in FP16 format) with Tensor Core enabled.
+- C++ APIs and PyTorch APIs to use the CUDA kernels.
 - Test codes to demonstrate the usage of FP6-LLM and verify its correctness.
 
 Our future plan includes but not limited to :
 - [ ] **End-to-end inference** support of [LLaMA2](https://arxiv.org/abs/2307.09288) models will be released soon.
 - [ ] Adding [StreamK](https://arxiv.org/abs/2301.03598) support for more flexible and efficient matrix-matrix multiplications.
 - [ ] Optimizing the performance for *compute bound* cases.
-- [ ] Currently, FP6-LLM only supports **FP6** quantization due to its accuracy/performance tradeoff benefits. However, technically speaking, this work can be easily extended to support other quanzation methods. If needed, the framework itself can be easily modifed to support other quanzation methods, e.g., **FP5, INT5 and INT6**.
+- [ ] Currently, FP6-LLM only supports **FP6** quantization due to its accuracy/performance tradeoff benefits. However, the technology of FP6-LLM can be easily applied to other quanzation methods, e.g., **FP5, INT5 and INT6**.
 - [ ] Currently, FP6-LLM is only tested and verified on **A100 GPUs**, but the core design methods can also be applied to other Tensor Core GPUs like **NVIDIA H100 and GH200**. Furtheremore, W6A8 quantization can be supported on H100 GPUs by exploiting the FP8 Tensor Cores.
 
 ## Installation
 1. Clone this repository.
 ```sh
-git clone https://github.com/Summer-Summer/fp6_llm.git
+git clone https://github.com/usyd-fsalab/fp6_llm.git
 cd fp6_llm
 ```
-2. Install the python package. [Enabling Pytorch APIs]
+2. Install the python package. [Enabling PyTorch APIs]
 ```sh
 pip install .
 ```
-If you want to test the performance of FP6-LLM for larger inference batch sizes, which typically happens during prompt processing, please revise [this file](tests/python/run.sh) by simply "commenting" and "uncommenting". 
 
 3. Compiling the .so file. [Enabling C++ APIs]
 ```sh
@@ -41,7 +40,7 @@ cd fp6_llm && make
 We provide scripts to verify the correctness of FP6-LLM.
 The outputs of FP6-LLM are compared to the outputs of the FP16 baseliness (the official implementation of linear layer in PyTorch and NVIDIA cuBLAS).
 
-#### 1. Run tests for Pytorch APIs
+#### 1. Run tests for PyTorch APIs
 ```
 cd ../tests/python
 ./run.sh
@@ -60,14 +59,13 @@ C and B are column-major matrices.
 The CUDA kernels can be launched via **PyTorch APIs** or **C++ APIs**.
 Currently:
 - OC(Output Channel) must be a multiple of 256, and IC(Input Channel) must be a multiple of 64.
-- BS(Batch Size) can be arbitrary values, smaller BS is prefered.
+- BS(Batch Size) can be arbitrary values, smaller BS is prefered for better performance than FP16 baseline.
 
 For more details of using FP6-LLM APIs, please see the source code of the [C++/Python Test](#tests).
 
-#### 1. Pytorch APIs
-To use the Pytorch APIs of FP6-LLM, you only need to import the python module:
+#### 1. PyTorch APIs
+To use the PyTorch APIs of FP6-LLM, you only need to import the python module:
 ```
-import torch
 import fp6_llm
 ```
 
@@ -81,7 +79,7 @@ Return:
     fp6_pakced_weight:  int tensor of shape [OC, IC // 16 * 3];     // 3 INT32 words contains 16 FP6 weights.
 ```
 
-* Execution FP6-FP16 mixed input GEMM on GPUs:
+* Execute FP6-FP16 mixed input GEMM on GPUs:
 ```
 fp16_output=fp6_llm.linear_forward_cuda(fp6_packed_weight, fp16_scale, fp16_input, splitK)
 
@@ -120,7 +118,7 @@ void weight_matrix_prepacking(int* packed_weights,                  // [Output] 
                               size_t K);                            // IC
 ```
 
-* Execution FP6-FP16 mixed input GEMM on GPUs:
+* Execute FP6-FP16 mixed input GEMM on GPUs:
 ```
 cudaError_t fp6_linear_kernel(cudaStream_t    stream,               // CUDA stream to execute the GPU kernel.
                               const uint4     *Weight,              // [Input]  Pointer to the FP6 weight matrix.
@@ -218,10 +216,9 @@ while SIMT cores are effectively leveraged for weight dequantization, transformi
 
 ## FP6-LLM Community
 FP6-LLM is already integrated in [DeepSpeed](https://github.com/microsoft/DeepSpeed) and this new feature will be available soon.
-We are also planning to integrate FP6-LLM into other inference frameworks.
-Given that easy-to-use Pytorch and C++ APIs are provided, FP6-LLM can be easily integrated to bigger projects as an useful component.
-
-We welcome all AI developers/practitioners/researchers to join this on-going project, fully exploring the potential of different quantization methods.
+Given that easy-to-use PyTorch and C++ APIs are provided, FP6-LLM can be easily integrated to any inference frameworks as an useful component.
+We welcome collaborations to integrate FP6-LLM into other inference frameworks.
+We also welcome all AI developers/practitioners/researchers to join this on-going project, fully exploring the potential of different quantization methods.
 
 ## Citation
 
@@ -246,6 +243,6 @@ If you find FP6-LLM useful or relevant to your research, please kindly cite [our
 - [DeepSpeed: Extreme Speed and Scale for DL Training and Inference](https://github.com/microsoft/DeepSpeed)
 - [cuBLAS: Basic Linear Algebra on NVIDIA GPUs](https://developer.nvidia.com/cublas)
 - [TensorRT-LLM: A TensorRT Toolbox for Optimized Large Language Model Inference](https://github.com/NVIDIA/TensorRT-LLM)
-- [AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration](https://github.com/mit-han-lab/llm-awq/)
 - [bitsandbytes: the library including quantization primitives for 8-bit & 4-bit operations](https://github.com/TimDettmers/bitsandbytes)
 - [Mixed-input matrix multiplication performance optimizations](https://blog.research.google/2024/01/mixed-input-matrix-multiplication.html)
+- [Flash-LLM: Enabling Cost-Effective and Highly-Efficient Large Generative Model Inference with Unstructured Sparsity](https://www.vldb.org/pvldb/vol17/p211-xia.pdf)
