@@ -1,23 +1,25 @@
-# FP6-LLM
+# Quant-LLM (FP6, FP5, FPx...)
 Six-bit quantization (FP6) can achieve **better trade-offs** between [*model quality*](#1-model-accuracy) and [*inference cost*](#2-speedups-on-linear-layers) compard to 4-bit and 8-bit quantization counterparts, reducing the size of large language models (LLMs) effectively and preserving the model quality consistently across varied applications.
 To support **6-bit inference of LLMs effective on modern GPUs**, we provide the official implementation of [**FP6-LLM**](https://arxiv.org/pdf/2401.14112.pdf), achieving significant *speedups of linear layers* and *GPU memory reduction* over the fp16/int8 baselines.
 
-Our long-term goal is to support **various quantization methods** by providing **extensible & high-performance** GPU kernels for mixed-input matrix multiplication, using the **unified design scheme** presented in our [paper](https://arxiv.org/pdf/2401.14112.pdf).
+Our long-term goal is to support **various quantization methods** by providing **extensible & high-performance** GPU kernels for mixed-input matrix multiplication, using the **unified design scheme** presented in our [paper](https://arxiv.org/pdf/2401.14112.pdf), which is recently accepted by [USENIX ATC24](https://www.usenix.org/conference/atc24/presentation/xia).
+
+Currently, we have tested **FP6_e3m2** and **FP5_e2m2**.
+However, our code is templated and easy to support different combination of eXmY if necessary.
 
 ![Overview of FP6-LLM.](./docs/figures/banner.png)
 
 ## Roadmap
 
 The current release contains:
+- We support model weights in **FP6_e3m2** or **FP5_e2m2** and the activations in FP16 format.
 - Efficient CUDA implementation for mixed-input matrix multiplication of linear layers (weights in FP6 and activations in FP16 format) with Tensor Core enabled.
 - C++ APIs and PyTorch APIs to use the CUDA kernels.
 - Test codes to demonstrate the usage of FP6-LLM and verify its correctness.
+- **End-to-end inference** support of [LLaMA2](https://arxiv.org/abs/2307.09288) models is released at [Deepspeed](https://github.com/microsoft/DeepSpeed/tree/master/blogs/deepspeed-fp6/03-05-2024).
 
 Our future plan includes but not limited to :
-- [ ] **End-to-end inference** support of [LLaMA2](https://arxiv.org/abs/2307.09288) models will be released soon.
-- [ ] Adding [StreamK](https://arxiv.org/abs/2301.03598) support for more flexible and efficient matrix-matrix multiplications.
-- [ ] Optimizing the performance for *compute bound* cases.
-- [ ] Currently, FP6-LLM only supports **FP6** quantization due to its accuracy/performance tradeoff benefits. However, the technology of FP6-LLM can be easily applied to other quanzation methods, e.g., **FP5, INT5 and INT6**.
+- [ ] Currently, FP6-LLM only supports **FP6** quantization due to its accuracy/performance tradeoff benefits. However, the technology of FP6-LLM can be easily applied to other quanzation methods, e.g., **FP4, INT5**.
 - [ ] Currently, FP6-LLM is only tested and verified on **A100 GPUs**, but the core design methods can also be applied to other Tensor Core GPUs like **NVIDIA H100 and GH200**. Furtheremore, W6A8 quantization can be supported on H100 GPUs by exploiting the FP8 Tensor Cores.
 
 ## Installation
@@ -53,7 +55,7 @@ make
 ./run.sh
 ```
 
-## How to use our CUDA kernels
+## How to use our FP6 CUDA kernels
 We implemented the CUDA kernel supporting matrix multiply C = A × B, where A is the weight matrix of shape [OC, IC] in FP6 and B is the activation matrix of shape [IC, BS] in FP16.
 C and B are column-major matrices.
 The CUDA kernels can be launched via **PyTorch APIs** or **C++ APIs**.
@@ -140,6 +142,9 @@ void DeQuantMatrix_FP6_To_FP16(half* A_16bit_h,                     // [Output] 
                                size_t K,                            // IC
                                half* scale);                        // [Input]  Pointer to the FP16 quantization scales.
 ```
+
+## How to use our FP5 CUDA kernels
+Similar to FP6 APIs, except that two more parameters (EXPONENT, MANTISSA) are required. More detailed will be provided soon.
 
 ## Performance
 
@@ -236,7 +241,9 @@ If you find FP6-LLM useful or relevant to your research, please kindly cite [our
 ```
 
 ## Change Logs
-- **[4th March, 2024]**: Release of FP6-LLM v1.0.
+- **[28th May, 2024]**: Release of FP6-LLM v0.2. Change the project name back to QuantLLM.
+- **[31th April, 2024]**: Our paper is accepted by [USENIX ATC24](https://www.usenix.org/conference/atc24/presentation/xia).
+- **[4th March, 2024]**: Release of FP6-LLM v0.1.
 
 ## Related Projects
 - [ZeroQuant(4+2): Redefining LLMs Quantization with a New FP6-Centric Strategy for Diverse Generative Tasks](https://arxiv.org/abs/2312.08583)

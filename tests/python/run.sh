@@ -5,12 +5,9 @@
 # which typically happens during prompt processing, 
 # please revise this file by simply "commenting" and "uncommenting".
 
+# BS <=64
 N=(1 2 4 8 16 32 64)
 SplitK=(5 6 7 6)
-
-# BS <=64
-#N=(1 2 4 8 16 32 64)
-#SplitK=(5 6 7 6)
 
 # BS = 128
 #N=(128)
@@ -29,7 +26,7 @@ SplitK=(5 6 7 6)
 #SplitK=(1 2 1 2)
 
 # BS >= 2048
-# N = (2048, 4096, 8192, 16384)
+#N=(2048, 4096, 8192, 16384)
 #SplitK=(1 1 1 1)
 
 # Benchmarking the specific Matrix Shape from llama2-70b
@@ -42,6 +39,8 @@ do
     for BS in ${N[@]} 
     do
         #ncu -f -o Profiling/M${M[i]}K${K[i]}N${BS} --set full \
-        python kernel_test.py --OC=${M[i]} --IC=${K[i]} --BS=${BS} --splitK=${SplitK[i]}  
+        #python kernel_test_fp6.py --OC=${M[i]} --IC=${K[i]} --BS=${BS} --splitK=${SplitK[i]}
+        python kernel_test_fpx.py --OC=${M[i]} --IC=${K[i]} --BS=${BS} --splitK=${SplitK[i]}
+        python kernel_test_fpx.py --OC=${M[i]} --IC=${K[i]} --BS=${BS} --splitK=${SplitK[i]} --EXP=3 --MAN=2
     done
 done

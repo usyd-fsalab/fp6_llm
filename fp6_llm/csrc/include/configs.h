@@ -47,28 +47,6 @@ struct TilingConfig {
     static constexpr int SMEM_SIZE_C_TILE   = TILE_N * (TILE_M + PADDING_BYTES_16) * 4;                             // sizeof(float)=4
 };
 
-/************************ General Config for FP6-LLM **********************/
-#define WEIGHT_FRAG1_BIT_WIDTH          2
-#define WEIGHT_FRAG2_BIT_WIDTH          4
-#define WEIGHT_BIT_WIDTH                (WEIGHT_FRAG1_BIT_WIDTH+WEIGHT_FRAG2_BIT_WIDTH)     // 6
-//#define QUANT_GROUP_SIZE_DIVIDED_BY_64  4                                                   // QuantGroupSize: 4*64 = 256
-/*************************** 64*64 Weghts of A WARP *************************/
-#define WEIGHT_PER_UNIT                 (WARP_M*WARP_K)                                     // 64*64
-#define SMEM_SIZE_IN_BYTES_PER_WARP_A1  (WEIGHT_PER_UNIT*WEIGHT_FRAG1_BIT_WIDTH/8)          // 1024 Bytes   #doubleBuffer not takedn into consideration
-#define SMEM_SIZE_IN_BYTES_PER_WARP_A2  (WEIGHT_PER_UNIT*WEIGHT_FRAG2_BIT_WIDTH/8)          // 2048 Bytes   #doubleBuffer not takedn into consideration
-#define SMEM_SIZE_A1_TILE               (SMEM_SIZE_IN_BYTES_PER_WARP_A1*4*PIPELINE_LEVEL_GMEM) // #WARP=4, #Trible-Buffer for 3-level pipeline for A = 12 KB; double buffer for 2-level pipeline A= 8  KB.   
-#define SMEM_SIZE_A2_TILE               (SMEM_SIZE_IN_BYTES_PER_WARP_A2*4*PIPELINE_LEVEL_GMEM) // #WARP=4, #Trible-Buffer for 3-level pipeline for A = 24 KB; double buffer for 2-level pipeline A= 16 KB.   
-/******************** Gloabl Memory Layout For QUANTIZED DATA ******************/
-#define NUM_INT4_PER_UNIT_2BIT_FRAG     (WEIGHT_PER_UNIT*WEIGHT_FRAG1_BIT_WIDTH/128)    // 64
-#define NUM_INT4_PER_UNIT_4BIT_FRAG     (WEIGHT_PER_UNIT*WEIGHT_FRAG2_BIT_WIDTH/128)    // 128
-/******************** Register Allocation For QUANTIZED DATA ******************/
-#define WEIGHT_PER_THREAD               (WEIGHT_PER_UNIT/WARP_SIZE)                 // 128
-#define REG_PER_THREAD_2BIT_FRAG        (WEIGHT_PER_THREAD/REG_BIT_WIDTH*2)         // 8
-#define REG_PER_THREAD_4BIT_FRAG        (WEIGHT_PER_THREAD/REG_BIT_WIDTH*4)         // 16
-/******************** Register Allocation For QUANT Scales ******************/
-#define WARP_REG_QUANT_SCALE                4                       // 8 rows per thread -> 8 FP16 scales -> 4 registers
-#define WARP_REG_QUANT_SCALE_DISTRIBUTED    1                       // T0-T3, T4-T7, ..., T28-T31 share the same scales, using shfl to get all the scales for each thread
-
 
 
 #endif  // CONFIGS_H

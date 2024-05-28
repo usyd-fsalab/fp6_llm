@@ -41,6 +41,7 @@ HEAD_FILES = csrc/fp6_linear.cuh \
 			 csrc/include/utils_core.cuh \
 			 csrc/include/utils_gmem.cuh \
 			 csrc/include/utils_parallel_dequant.cuh \
+			 csrc/utils/common.h \
 			 csrc/utils/weight_prepacking.h \
 			 csrc/utils/weight_quant.h \
 			 csrc/utils/weight_dequant.h

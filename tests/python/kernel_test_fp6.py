@@ -21,7 +21,6 @@ print(args)
 fp6_weight = torch.randint(4294967295, (args.OC,args.IC//16*3)).to(torch.int)    # Randomly initialize each bytes. The highest value for randint() is set the the max value of uint32_t.
 fp16_scale = torch.rand(args.OC).to(torch.half)+0.5
 fp16_activation = torch.rand(args.BS, args.IC).to(torch.half)+0.5
-
 start_event = torch.cuda.Event(enable_timing=True)
 end_event = torch.cuda.Event(enable_timing=True)
 
@@ -64,8 +63,8 @@ cublas_tflops  = args.OC*args.IC*args.BS*2/cublas_time_ms/1e9
 ####################################################################################################################################
 
 # Performance
-print( 'cuBLAS  time: {:.2f} ms \t\t cuBLAS  TFLOPs: {:.1f}'.format(cublas_time_ms,  cublas_tflops) )
-print( 'fp6-llm time: {:.2f} ms \t\t fp6-llm TFLOPs: {:.1f}'.format(fp6_llm_time_ms, fp6_llm_tflops) )
+print( 'cuBLAS  time: {:.3f} ms \t\t cuBLAS  TFLOPs: {:.1f}'.format(cublas_time_ms,  cublas_tflops) )
+print( 'fp6-llm time: {:.3f} ms \t\t fp6-llm TFLOPs: {:.1f}'.format(fp6_llm_time_ms, fp6_llm_tflops) )
 print( 'speedup: {:.2f}'.format(cublas_time_ms/fp6_llm_time_ms) )
 
 # Correctness
@@ -75,22 +74,3 @@ mean_error        = torch.mean(abs(error))
 mean_ground_truth = torch.mean(abs(ground_truth))
 relative_error    = mean_error.item()/mean_ground_truth.item()
 print( "relative error: {:.6f}".format(relative_error) )
-
-
-
-# 001100 001100 001100 001100 001100 001100 001100 001100 001100 001100 001100 001100 001100 001100 001100 001100 
-# "00110000110000110000110000110000"       "11000011000011000011000011000011"     "00001100001100001100001100001100"
-# 818089008                                 3272356035                              204522252
-#fp6_weight = torch.zeros(args.OC, args.IC//16*3).to(torch.int64)
-#for i in range(args.OC):
-#    for j in range(args.IC//16):
-#        fp6_weight[i][j*3+0] = 818089008
-#        fp6_weight[i][j*3+1] = 3272356035 
-#        fp6_weight[i][j*3+2] = 204522252
-#fp6_weight = fp6_weight.to(torch.int)
-
-# Ensuring that the absolute error or relative error of each matrix element is smaller than 1e-3.
-#Error = [1e-2]  
-#for err in Error:
-#    AllClose = torch.allclose(results_fp6_llm.cpu(), results_cublas.cpu(), rtol=err, atol=err, equal_nan=True)
-#    print("torch.allclose\t (relative/absolute_error<" + str(err) + ") \t-> " + str(AllClose))

@@ -30,13 +30,19 @@ SMS ?= 80
 $(foreach sm,$(SMS),$(eval GENCODE_FLAGS += -gencode arch=compute_$(sm),code=sm_$(sm)))
 ################################################################################
 # Target rules
-all: kernel_test
+all: kernel_test_fp6 kernel_test_fpx
 
-kernel_test.o:  kernel_test.cu kernel_test.h
+kernel_test_fp6.o:  kernel_test_fp6.cu kernel_test.h
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
-kernel_test: kernel_test.o 
+kernel_test_fpx.o:  kernel_test_fpx.cu kernel_test.h
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+
+kernel_test_fp6: kernel_test_fp6.o 
+	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES) 
+
+kernel_test_fpx: kernel_test_fpx.o 
 	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES) 
 
 clean:
-	rm -f kernel_test kernel_test.o
+	rm -f kernel_test_fp6 kernel_test_fp6.o kernel_test_fpx kernel_test_fpx.o

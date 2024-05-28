@@ -7,6 +7,9 @@ N=(1 2 3 4 5 6 7 8)
 M=(13824 5120  22016 8192)
 K=(5120  13824 8192  22016)
 SplitK=(4 10 5 6)      # SplitK for smaller Batch Sizes
+#SplitK=(3)      # SplitK for Batch Sizes 128
+#SplitK=(3)      # SplitK for Batch Sizes 512
+#SplitK=(1)      # SplitK for Batch Sizes 2048
 
 
 # Benchmarking Matrix Shapes from OPT models 
@@ -33,6 +36,8 @@ do
     do
         echo "BS=${BS}"
         #ncu -f -o Profiling/M${M[i]}K${K[i]}N${BS} --set full \
-        ./kernel_test ${M[i]} ${K[i]} ${BS} ${SplitK[i]}  
+        #./kernel_test_fp6 ${M[i]} ${K[i]} ${BS} ${SplitK[i]}
+        ./kernel_test_fpx 2 2 ${M[i]} ${K[i]} ${BS} ${SplitK[i]}
+        ./kernel_test_fpx 3 2 ${M[i]} ${K[i]} ${BS} ${SplitK[i]}  
     done
 done

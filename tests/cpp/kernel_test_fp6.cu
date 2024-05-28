@@ -56,7 +56,6 @@ int main(int argc, char** argv)
     cudaEventCreate(&stop);
     checkLastCudaError(__LINE__);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    printf("Launching CuBlas...\n");
     half* D_cublas = NULL;
     cudaMalloc(reinterpret_cast<void**>(&D_cublas), sizeof(half) * M_GLOBAL * N_GLOBAL);        CheckMallocCUDA(D_cublas, __LINE__);
     cudaMemset(D_cublas, 0, sizeof(half) * M_GLOBAL * N_GLOBAL);
@@ -109,7 +108,6 @@ int main(int argc, char** argv)
     cudaFree(D_cublas);
     checkLastCudaError(__LINE__);
     /////////////////////////////////////////////////////////////////////////////////////////////////
-    printf("Launching FP6-LLM...\n");
     half* D_fp6 = NULL;
     cudaMalloc(reinterpret_cast<void**>(&D_fp6), sizeof(half) * M_GLOBAL * N_GLOBAL); CheckMallocCUDA(D_fp6);
     cudaMemset(D_fp6, 0, sizeof(half) * M_GLOBAL * N_GLOBAL);
@@ -149,11 +147,10 @@ int main(int argc, char** argv)
     cudaFree(D_fp6);
     cudaFree(Reduction_Workspace);
     /////////////////////////////////////////////////////////////////////////////////////////////////
-    // printf("Verifying correctness of the computations...\n");
     double totalRelativeError_fp6  = ComputeTotalError(D_cublas_h, D_fp6_h, M_GLOBAL, N_GLOBAL);
-    printf("******************************************Problem Size******************************************\n");
-    printf("M: %d N: %d K: %d SplitK: %d\n", M_GLOBAL, N_GLOBAL, K_GLOBAL, SPLIT_K);
-    // printf("******************************************Performance*******************************************\n");
+    printf("************************************* ");
+    printf("[%d-bit Weights, e%dm%d] M: %d N: %d K: %d SplitK: %d", 6, 3, 2, M_GLOBAL, N_GLOBAL, K_GLOBAL, SPLIT_K);
+    printf(" ************************************\n");
     PrintPerformance("cuBLAS", milliseconds_cublas, tflops_cublas, 0.0);
     PrintPerformance("fp6_llm", milliseconds_fp6, tflops_fp6, totalRelativeError_fp6);
 

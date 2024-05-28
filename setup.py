@@ -20,9 +20,9 @@ extra_compile_args = {
 setup(
     name="fp6_llm",
     author="Haojun Xia, Zhen Zheng, Xiaoxia Wu, Shiyang Chen, Zhewei Yao, Stephen Youn, Arash Bakhtiari, Michael Wyatt, Donglin Zhuang, Zhongzhu Zhou, Olatunji Ruwase, Yuxiong He, Shuaiwen Leon Song",
-    version="0.1",
+    version="0.2",
     author_email="xhjustc@gmail.com",
-    description = "An efficient GPU support for LLM inference with 6-bit quantization (FP6).",
+    description ="An efficient GPU support for LLM inference with x-bit quantization (e.g., FP6 and FP5).",
     python_requires=">=3.8",
     install_requires=[
         "torch",
