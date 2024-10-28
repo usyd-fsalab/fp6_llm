@@ -31,7 +31,7 @@ setup(
     packages=find_packages(),
     ext_modules=[
         CUDAExtension(
-            name="fp6_llm",
+            name="fp6_llm_cuda",
             sources=[
                 "fp6_llm/csrc/pybind.cpp", 
                 "fp6_llm/csrc/fp6_linear.cu"

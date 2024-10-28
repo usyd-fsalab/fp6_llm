@@ -94,6 +94,18 @@ Return:
     fp16_output:        tensor of shape [B, OC];                    // half tensor
 ```
 
+* To help users determine the SplitK for other MatMul shapes, we provide a heuristic function in this repo to calculate a SplitK.
+This function can provide you a pretty good candidature for SplitK.
+To achieve best performance, please try different SplitK executing the MatMul of the given shape and choose the best SplitK according to the measured kernel latency.
+```
+import fp6_llm
+SplitK = fp6_llm.HeuristicFuntion_SplitK(M, N, Number_GPU_SMs)
+
+Arguments:
+    M is the number of rows of the weight matrix, N is the inference batch size. More specifically, the shape of the MulMal: (M, K) * (K, N) -> (M, N), 
+    Number_GPU_SMs is the number of Stream Multiprocessors of the GPU you are using. For A100 GPUs, Number_GPU_SMs=108.
+```
+
 * Dequantize an FP6 matrix back to FP16 matrix with CPUs (a useful tool to construct input matrices for the FP16 GEMM baseline):
 ```
 fp16_tensor=fp6_llm.weight_dequant_cpu(fp6_tensor, fp16_scale)
