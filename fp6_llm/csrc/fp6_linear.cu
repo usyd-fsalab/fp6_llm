@@ -3,6 +3,8 @@
 #include "utils/weight_prepacking.h"
 #include "utils/weight_dequant.h"
 #include "utils/weight_quant.h"
+#include <ATen/cuda/CUDAContext.h> // For CUDA stream management
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -185,8 +187,12 @@ torch::Tensor fp6_linear_forward_cuda(
     options = torch::TensorOptions().dtype(torch::kFloat32).device(_in_feats.device());
     at::Tensor _workspace = torch::empty({splitK, num_in_feats, num_out_channels}, options);
     auto Reduction_Workspace = reinterpret_cast<float*>(_workspace.data_ptr<float>());  // Reduction_Workspace_Size = Split_K * M_Global * N_Global * sizeof(fp32)
-      
-    fp6_linear_kernel(0, // Using default stream here.
+
+    // Get the current device and stream
+    int device_id = _in_feats.device().index();
+    auto stream = at::cuda::getCurrentCUDAStream(device_id).stream();
+
+    fp6_linear_kernel(stream, // Using current stream.
                       weight,
                       scales,
                       in_feats,
@@ -295,11 +301,16 @@ torch::Tensor fp_eXmY_linear_forward_cuda(
     options = torch::TensorOptions().dtype(torch::kFloat32).device(_in_feats.device());
     at::Tensor _workspace = torch::empty({splitK, num_in_feats, num_out_channels}, options);
     auto Reduction_Workspace = reinterpret_cast<float*>(_workspace.data_ptr<float>());  // Reduction_Workspace_Size = Split_K * M_Global * N_Global * sizeof(fp32)
+
+    // Get the current device and stream
+    int device_id = _in_feats.device().index();
+    auto stream = at::cuda::getCurrentCUDAStream(device_id).stream();
+
     //
     fp_eXmY_linear_kernel(
         EXPONENT,
         MANTISSA,
-        0, // Using default stream here.
+        stream, // Using torch's current stream here.
         weight,
         scales,
         in_feats,
