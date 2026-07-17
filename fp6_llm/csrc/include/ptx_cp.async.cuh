@@ -1,59 +1,44 @@
-/***************************************************************************
- * Copyright 2023 The FLash-LLM Authors. All rights reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- ***************************************************************************/
-// Extended from CUTLASS's source code
-
+/*
+ * AMD ROCm HIP port of ptx_cp.async.cuh — v3 optimized
+ *
+ * Uses __builtin_prefetch (GCC/clang standard, works on all AMD GPU arches
+ * including gfx942) to hint the next cache line into L1/L2 ahead of the
+ * synchronous load. This partially restores the latency-hiding effect of
+ * CUDA cp.async by overlapping prefetch with MFMA compute.
+ *
+ * Note: __builtin_amdgcn_s_prefetch_data requires gfx12 (RDNA4) — not
+ * available on gfx942 (CDNA3/MI300X). Use __builtin_prefetch instead.
+ *
+ * KB refs: ptx_asm_to_hip_builtins (production_ready)
+ */
 #ifndef PTX_CP_ASYNC_CUH
 #define PTX_CP_ASYNC_CUH
 
-#include <cuda.h>
-#include <cuda_fp16.h>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_fp16.h>
 
 template<int SizeInBytes>
 __device__ __forceinline__ void cp_async(half* smem_ptr, const half* global_ptr, bool pred_guard = true)
 {
     static_assert(SizeInBytes == 16, "Size is not supported");
-    unsigned smem_int_ptr = __cvta_generic_to_shared(smem_ptr);
-    asm volatile("{ \n"
-                 "  .reg .pred p;\n"
-                 "  setp.ne.b32 p, %0, 0;\n"
-                 "  @p cp.async.cg.shared.global [%1], [%2], %3;\n"
-                 "}\n" ::"r"((int)pred_guard),
-                 "r"(smem_int_ptr),
-                 "l"(global_ptr),
-                 "n"(SizeInBytes));
+    if (pred_guard) {
+        // Prefetch the next 64 bytes (next cacheline) into L1D cache
+        // while this iteration's load is being processed.
+        // __builtin_prefetch(addr, rw=0(read), locality=3(L1)) is supported on gfx942.
+        __builtin_prefetch(global_ptr + 16, 0, 3);
+
+        // 128-bit synchronous global->LDS copy
+        const uint4* src = reinterpret_cast<const uint4*>(global_ptr);
+        uint4*       dst = reinterpret_cast<uint4*>(smem_ptr);
+        *dst = *src;
+    }
 }
 
-/// Establishes an ordering w.r.t previously issued cp.async instructions. Does not block.
-__device__ __forceinline__ void cp_async_group_commit()
-{
-    asm volatile("cp.async.commit_group;\n" ::);
-}
+__device__ __forceinline__ void cp_async_group_commit() { /* no-op */ }
 
-/// Blocks until all but <N> previous cp.async.commit_group operations have committed.
 template<int N>
-__device__ __forceinline__ void cp_async_wait_group()
-{
-    asm volatile("cp.async.wait_group %0;\n" ::"n"(N));
-}
+__device__ __forceinline__ void cp_async_wait_group() { __syncthreads(); }
 
-/// Blocks until all previous cp.async.commit_group operations have committed.
-// cp.async.wait_all is equivalent to :
-// cp.async.commit_group;
-// cp.async.wait_group 0;
-__device__ __forceinline__ void cp_async_wait_all()
-{
-    asm volatile("cp.async.wait_all;\n" ::);
-}
+__device__ __forceinline__ void cp_async_wait_all() { __syncthreads(); }
 
-#endif
+#endif  // PTX_CP_ASYNC_CUH

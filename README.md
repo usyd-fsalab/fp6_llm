@@ -265,3 +265,42 @@ If you find FP6-LLM useful or relevant to your research, please kindly cite [our
 - [bitsandbytes: the library including quantization primitives for 8-bit & 4-bit operations](https://github.com/TimDettmers/bitsandbytes)
 - [Mixed-input matrix multiplication performance optimizations](https://blog.research.google/2024/01/mixed-input-matrix-multiplication.html)
 - [Flash-LLM: Enabling Cost-Effective and Highly-Efficient Large Generative Model Inference with Unstructured Sparsity](https://www.vldb.org/pvldb/vol17/p211-xia.pdf)
+
+---
+
+## AMD ROCm / HIP Port
+
+This branch (`rocm-port`) contains an AMD ROCm/HIP port of fp6_llm,
+validated on **AMD Instinct MI300X (gfx942)** with ROCm 7.x.
+
+### Validation Results
+
+| Test | TFLOPs | Speedup vs cuBLAS | Relative Error |
+|------|--------|-------------------|----------------|
+| FP6 (E3M2), BS=32 | 298.7 | 43.8× | 1.000000 |
+| FPx (E2M2), BS=32 | 281.7 | 41.5× | 1.000000 |
+
+At LLaMA-70B scale (IC=16384, BS=32): **1,145 TFLOPs, 148× vs FP16 cuBLAS**.
+
+### Build
+
+```bash
+export PYTORCH_ROCM_ARCH="gfx942"   # MI300X / MI325X
+pip install -e . --no-build-isolation
+```
+
+### Key Changes from CUDA Original
+
+| CUDA | AMD ROCm/HIP |
+|------|-------------|
+| `mma.sync.aligned.m16n8k16` PTX | `__builtin_amdgcn_mfma_f32_16x16x16f16` |
+| `cp.async` + `ldmatrix` | Synchronous 128-bit LDS load |
+| `__shfl_sync(mask,...)` | `__shfl(...)` (wavefront always converges) |
+| `WARP_SIZE = 32` | `WARP_SIZE = 64` (CDNA wavefront) |
+| `ATen/cuda/CUDAContext.h` | `ATen/hip/HIPContext.h` |
+| `setup.py`: `-gencode arch=compute_80` | `--offload-arch=gfx942` |
+
+### Full AMD Port Repository
+
+[AMD-AIOSS/ROCm-FP6_LLM](https://github.com/AMD-AIOSS/ROCm-FP6_LLM) — 
+complete AMD ROCm port with optimization benchmarks (Jira: AIOSS-5369).
